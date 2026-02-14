@@ -89,6 +89,9 @@ indexBuffer;
 
 layout(push_constant) uniform PushConstant {
     int numRayBounces;
+    int useJitter;
+    float emissionMultiplier;
+    float ambientLight;
 }
 pc;
 
@@ -410,9 +413,9 @@ void main() {
             imageStore(motionVectorImage, pixel, vec4(motionVec, 0.0, 0.0));
         }
 
-        // sightly make the first non-mirror hit brighter
+        // configurable ambient light on first hit
         if (psrDepth == 1) {
-            mainRay.radiance += 0.03 * mainRay.albedoValue.rgb * mainRay.albedoValue.a * mainRay.throughput;
+            mainRay.radiance += pc.ambientLight * mainRay.albedoValue.rgb * mainRay.albedoValue.a * mainRay.throughput;
         }
 
         psrHitPosition = mainRay.origin;
@@ -420,7 +423,7 @@ void main() {
         firstLobeType = mainRay.lobeType;
         isFirstHitNoisy = mainRay.noisy > 0;
         if (isFirstHitNoisy) {
-            firstHitEmission = 16 * mainRay.albedoValue.rgb * firstHitMat.emission;
+            firstHitEmission = 16 * pc.emissionMultiplier * mainRay.albedoValue.rgb * firstHitMat.emission;
             if (mainRay.lobeType == 0 || mainRay.lobeType == 2) { // Diffuse OR Refraction
                 isFirstHitDiffuse = true;
                 firstHitDirectRadiance = mainRay.directLightRadiance;
@@ -513,7 +516,7 @@ void main() {
                 vec3 sunDir = normalize(skyUBO.sunDirection);
                 vec3 rayDir = orgDirection;
                 float progress = skyUBO.rainGradient;
-                vec3 rainyRadiance = mix(vec3(0.04, 0.05, 0.1), vec3(0.1), smoothstep(-0.3, 0.3, sunDir.y));
+                vec3 rainyRadiance = mix(vec3(0.04, 0.05, 0.1) * skyUBO.nightSkyAmbient, vec3(0.1), smoothstep(-0.3, 0.3, sunDir.y));
                 vec3 sunnyRadiance = texture(skyFull, rayDir).rgb;
                 vec3 fogRadiance = mix(sunnyRadiance, rainyRadiance, progress);
 

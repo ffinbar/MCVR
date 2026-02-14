@@ -26,6 +26,7 @@ layout(push_constant) uniform PushConstant {
     float speedDown;
     float minExposure;
     float maxExposure;
+    float darkAdaptLimit;
 }
 pc;
 
@@ -77,7 +78,7 @@ void main() {
     float avgLogLum = (used > 0u) ? float(sumLog / double(used)) : pc.log2Min;
     float avgLum = exp2(avgLogLum);
 
-    float targetExposure = pc.middleGrey / max(avgLum, 1e-6);
+    float targetExposure = pc.middleGrey / max(avgLum, pc.darkAdaptLimit);
 
     float prev = expData.exposure;
     float speed = (targetExposure > prev) ? pc.speedUp : pc.speedDown;

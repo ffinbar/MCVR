@@ -23,6 +23,10 @@ struct Options {
     uint32_t debugMode = 0;
     bool needRecreate = false;
 
+    glm::vec3 sunRadiance{16.0f};
+    glm::vec3 moonRadiance{0.4f, 0.5f, 1.0f};
+    float nightSkyAmbient{1.0f};
+
     uint32_t chunkBuildingBatchSize = 2;
     uint32_t chunkBuildingTotalBatches = 4;
 };

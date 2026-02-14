@@ -34,6 +34,9 @@ struct ToneMappingModulePushConstant {
     float speedDown;   // 变暗适应速度（1/秒），例如 1.0
     float minExposure; // 可选 clamp，例如 0.0001
     float maxExposure; // 可选 clamp，例如 10000.0
+    float darkAdaptLimit; // min avg luminance floor to prevent over-brightening dark scenes
+    float saturation;
+    float contrast;
 };
 
 class ToneMappingModule : public WorldModule, public SharedObject<ToneMappingModule> {
@@ -99,9 +102,13 @@ class ToneMappingModule : public WorldModule, public SharedObject<ToneMappingMod
     std::shared_ptr<vk::GraphicsPipeline> pipeline_;
     std::vector<std::shared_ptr<vk::Sampler>> samplers_;
 
-    float middleGrey_ = 0.18;
+    float middleGrey_ = 0.10;
     float speedUp_ = 3.0;
-    float speedDown_ = 3.0;
+    float speedDown_ = 1.5;
+    float maxExposure_ = 64.0f;
+    float darkAdaptLimit_ = 0.2f;
+    float saturation_ = 1.3f;
+    float contrast_ = 1.2f;
 
     // output
     std::vector<std::shared_ptr<vk::DeviceLocalImage>> ldrImages_;

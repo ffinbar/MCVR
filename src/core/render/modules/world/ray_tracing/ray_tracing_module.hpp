@@ -22,6 +22,8 @@ class WorldPrepareContext;
 struct RayTracingPushConstant {
     int numRayBounces;
     int useJitter;
+    float emissionMultiplier;
+    float ambientLight;
 };
 
 class RayTracingModule : public WorldModule, public SharedObject<RayTracingModule> {
@@ -110,6 +112,8 @@ class RayTracingModule : public WorldModule, public SharedObject<RayTracingModul
 
     uint32_t numRayBounces_ = 4;
     bool useJitter_ = true;
+    float emissionMultiplier_ = 1.0f;
+    float ambientLight_ = 0.03f;
 
     // output
     std::vector<std::shared_ptr<vk::DeviceLocalImage>> hdrNoisyOutputImages_;

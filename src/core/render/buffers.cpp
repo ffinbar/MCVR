@@ -375,10 +375,11 @@ void Buffers::setAndUploadSkyUniformBuffer(vk::Data::SkyUBO &ubo) {
     ubo.Hm = 1200.0;
     ubo.mieG = 0.80;
     ubo.betaR = glm::vec3(5.802e-6, 13.558e-6, 33.100e-6);
-    ubo.betaM = glm::vec3(21.000e-6, 21.000e-6, 21.000e-6);
+    ubo.betaM = glm::vec3(4.0e-6, 4.0e-6, 4.0e-6);
     ubo.minViewCos = 0.02;
-    ubo.sunRadiance = glm::vec3(16);
-    ubo.moonRadiance = glm::vec3(0.4, 0.5, 1);
+    ubo.nightSkyAmbient = Renderer::options.nightSkyAmbient;
+    ubo.sunRadiance = Renderer::options.sunRadiance;
+    ubo.moonRadiance = Renderer::options.moonRadiance;
 
     if (skyUniformBuffer_[context->frameIndex] == nullptr) {
         skyUniformBuffer_[context->frameIndex] =

@@ -1,0 +1,71 @@
+#version 460
+
+layout(set = 0, binding = 0) uniform sampler2D uSrc;
+layout(set = 0, binding = 1, rgba16f) uniform writeonly image2D uDst;
+
+layout(push_constant) uniform PushConstants {
+    vec2 srcTexelSize;   // 1.0 / srcResolution
+    float threshold;     // luminance threshold (first pass only)
+    float softKnee;      // soft threshold knee width
+    int applyThreshold;  // 1 on first pass, 0 on subsequent
+} pc;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec3 thresholdFilter(vec3 color) {
+    float lum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    float knee = pc.threshold * pc.softKnee;
+    float soft = lum - pc.threshold + knee;
+    soft = clamp(soft, 0.0, 2.0 * knee);
+    soft = soft * soft / (4.0 * knee + 1e-6);
+    float contribution = max(soft, lum - pc.threshold) / max(lum, 1e-6);
+    return color * max(contribution, 0.0);
+}
+
+// 13-tap downsample (Jimenez 2014 / CoD:AW)
+vec3 downsample13Tap(vec2 uv) {
+    vec2 ts = pc.srcTexelSize;
+
+    // Center
+    vec3 a = texture(uSrc, uv).rgb;
+
+    // Inner box (4 bilinear samples at half-pixel offsets)
+    vec3 b = texture(uSrc, uv + vec2(-1.0, -1.0) * ts).rgb;
+    vec3 c = texture(uSrc, uv + vec2( 1.0, -1.0) * ts).rgb;
+    vec3 d = texture(uSrc, uv + vec2(-1.0,  1.0) * ts).rgb;
+    vec3 e = texture(uSrc, uv + vec2( 1.0,  1.0) * ts).rgb;
+
+    // Outer samples
+    vec3 f = texture(uSrc, uv + vec2(-2.0, -2.0) * ts).rgb;
+    vec3 g = texture(uSrc, uv + vec2( 0.0, -2.0) * ts).rgb;
+    vec3 h = texture(uSrc, uv + vec2( 2.0, -2.0) * ts).rgb;
+    vec3 i = texture(uSrc, uv + vec2(-2.0,  0.0) * ts).rgb;
+    vec3 j = texture(uSrc, uv + vec2( 2.0,  0.0) * ts).rgb;
+    vec3 k = texture(uSrc, uv + vec2(-2.0,  2.0) * ts).rgb;
+    vec3 l = texture(uSrc, uv + vec2( 0.0,  2.0) * ts).rgb;
+    vec3 m = texture(uSrc, uv + vec2( 2.0,  2.0) * ts).rgb;
+
+    // Weighted combination (reduces pulsating artifacts)
+    vec3 result = a * 0.125;
+    result += (b + c + d + e) * 0.125;
+    result += (f + g + h + i + j + k + l + m) * 0.03125;
+
+    return result;
+}
+
+void main() {
+    ivec2 dstCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 dstSize = imageSize(uDst);
+
+    if (dstCoord.x >= dstSize.x || dstCoord.y >= dstSize.y) return;
+
+    vec2 uv = (vec2(dstCoord) + 0.5) / vec2(dstSize);
+
+    vec3 color = downsample13Tap(uv);
+
+    if (pc.applyThreshold != 0) {
+        color = thresholdFilter(color);
+    }
+
+    imageStore(uDst, dstCoord, vec4(color, 1.0));
+}

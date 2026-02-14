@@ -99,6 +99,21 @@ void RayTracingModule::setAttributes(int attributeCount, std::vector<std::string
         } else if (key == "render_pipeline.module.ray_tracing.attribute.use_jitter") {
             useJitter_ = parseBool(value);
             Renderer::instance().buffers()->setUseJitter(useJitter_);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.emission_multiplier") {
+            emissionMultiplier_ = std::stof(value);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.sun_radiance") {
+            float v = std::stof(value);
+            Renderer::options.sunRadiance = glm::vec3(v);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.moon_radiance_r") {
+            Renderer::options.moonRadiance.r = std::stof(value);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.moon_radiance_g") {
+            Renderer::options.moonRadiance.g = std::stof(value);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.moon_radiance_b") {
+            Renderer::options.moonRadiance.b = std::stof(value);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.night_sky_ambient") {
+            Renderer::options.nightSkyAmbient = std::stof(value);
+        } else if (key == "render_pipeline.module.ray_tracing.attribute.ambient_light") {
+            ambientLight_ = std::stof(value);
         }
     }
 }
@@ -388,7 +403,7 @@ void RayTracingModule::initDescriptorTables() {
                                   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR |
                                   VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
                     .offset = 0,
-                    .size = sizeof(uint32_t),
+                    .size = sizeof(RayTracingPushConstant),
                 })
                 .build(framework->device());
     }
@@ -584,11 +599,16 @@ void RayTracingModuleContext::render() {
     rayTracingDescriptorTable->bindBuffer(buffers->lastWorldUniformBuffer(), 2, 1);
     rayTracingDescriptorTable->bindBuffer(buffers->skyUniformBuffer(), 2, 2);
 
+    RayTracingPushConstant pc{};
+    pc.numRayBounces = static_cast<int>(module->numRayBounces_);
+    pc.useJitter = module->useJitter_ ? 1 : 0;
+    pc.emissionMultiplier = module->emissionMultiplier_;
+    pc.ambientLight = module->ambientLight_;
     vkCmdPushConstants(worldCommandBuffer->vkCommandBuffer(), rayTracingDescriptorTable->vkPipelineLayout(),
                        VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR |
                            VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR |
                            VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-                       0, sizeof(uint32_t), &module->numRayBounces_);
+                       0, sizeof(RayTracingPushConstant), &pc);
 
     auto chooseSrc = [](VkImageLayout oldLayout, VkPipelineStageFlags2 fallbackStage, VkAccessFlags2 fallbackAccess,
                         VkPipelineStageFlags2 &outStage, VkAccessFlags2 &outAccess) {

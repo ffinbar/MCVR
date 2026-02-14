@@ -1,0 +1,30 @@
+#version 460
+
+layout(set = 0, binding = 0) uniform sampler2D uOriginalHDR;
+layout(set = 0, binding = 1) uniform sampler2D uBloom;
+layout(set = 0, binding = 2, rgba16f) uniform writeonly image2D uOutput;
+
+layout(push_constant) uniform PushConstants {
+    float intensity;     // bloom mix strength (0.0 - 1.0+)
+    float padding0;
+    float padding1;
+    float padding2;
+} pc;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main() {
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 outSize = imageSize(uOutput);
+
+    if (coord.x >= outSize.x || coord.y >= outSize.y) return;
+
+    vec2 uv = (vec2(coord) + 0.5) / vec2(outSize);
+
+    vec3 hdr = texture(uOriginalHDR, uv).rgb;
+    vec3 bloom = texture(uBloom, uv).rgb;
+
+    vec3 result = hdr + bloom * pc.intensity;
+
+    imageStore(uOutput, coord, vec4(result, 1.0));
+}

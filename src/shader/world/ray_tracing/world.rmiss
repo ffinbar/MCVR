@@ -160,7 +160,7 @@ void main() {
 
             {
                 vec4 moonSample = evalMoonBillboard(rd);
-                vec3 nightCompensite = vec3(0.04, 0.05, 0.1);
+                vec3 nightCompensite = vec3(0.04, 0.05, 0.1) * skyUBO.nightSkyAmbient;
 
                 if (moonSample.a > 0.0) {
                     vec3 C = vec3(0.0, -skyUBO.Rg, 0.0);
@@ -176,7 +176,7 @@ void main() {
                         float mu = clamp(dot(up, moonDir), -1.0, 1.0);
                         r = clamp(r, skyUBO.Rg, skyUBO.Rt);
                         vec3 T = sampleTransmittance(r, mu);
-                        vec3 moonRadiance = (moonSample.rgb * T * moonSample.a);
+                        vec3 moonRadiance = (moonSample.rgb * skyUBO.moonRadiance * T * moonSample.a);
                         mainRay.radiance += mix(moonRadiance, vec3(nightCompensite), progress) * mainRay.throughput;
                     }
                 } else {

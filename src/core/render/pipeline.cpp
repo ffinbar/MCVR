@@ -4,6 +4,7 @@
 #include "core/render/renderer.hpp"
 
 #include "core/render/modules/ui_module.hpp"
+#include "core/render/modules/world/bloom/bloom_module.hpp"
 #include "core/render/modules/world/dlss/dlss_module.hpp"
 #include "core/render/modules/world/fsr_upscaler/upscaler_module.hpp"
 #include "core/render/modules/world/nrd/nrd_module.hpp"
@@ -352,6 +353,14 @@ void Pipeline::collectWorldModules() {
     worldModuleInOutImageNums.insert(
         std::make_pair(TemporalAccumulationModule::NAME, std::make_pair(TemporalAccumulationModule::inputImageNum,
                                                                         TemporalAccumulationModule::outputImageNum)));
+
+    worldModuleConstructors.insert(std::make_pair(
+        BloomModule::NAME,
+        [](std::shared_ptr<Framework> framework, std::shared_ptr<WorldPipeline> worldPipeline) {
+            return BloomModule::create(framework, worldPipeline);
+        }));
+    worldModuleInOutImageNums.insert(std::make_pair(
+        BloomModule::NAME, std::make_pair(BloomModule::inputImageNum, BloomModule::outputImageNum)));
 
     worldModuleConstructors.insert(std::make_pair(
         PostRenderModule::NAME, [](std::shared_ptr<Framework> framework, std::shared_ptr<WorldPipeline> worldPipeline) {

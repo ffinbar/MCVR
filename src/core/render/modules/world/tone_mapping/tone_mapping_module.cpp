@@ -54,6 +54,14 @@ void ToneMappingModule::setAttributes(int attributeCount, std::vector<std::strin
             speedUp_ = std::stof(attributeKVs[2 * i + 1]);
         } else if (attributeKVs[2 * i] == "render_pipeline.module.tone_mapping.attribute.exposure_down_speed") {
             speedDown_ = std::stof(attributeKVs[2 * i + 1]);
+        } else if (attributeKVs[2 * i] == "render_pipeline.module.tone_mapping.attribute.max_exposure") {
+            maxExposure_ = std::stof(attributeKVs[2 * i + 1]);
+        } else if (attributeKVs[2 * i] == "render_pipeline.module.tone_mapping.attribute.dark_adapt_limit") {
+            darkAdaptLimit_ = std::stof(attributeKVs[2 * i + 1]);
+        } else if (attributeKVs[2 * i] == "render_pipeline.module.tone_mapping.attribute.saturation") {
+            saturation_ = std::stof(attributeKVs[2 * i + 1]);
+        } else if (attributeKVs[2 * i] == "render_pipeline.module.tone_mapping.attribute.contrast") {
+            contrast_ = std::stof(attributeKVs[2 * i + 1]);
         }
     }
 }
@@ -120,7 +128,7 @@ void ToneMappingModule::initDescriptorTables() {
                                    .endDescriptorLayoutSetBinding()
                                    .endDescriptorLayoutSet()
                                    .definePushConstant(VkPushConstantRange{
-                                       .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+                                       .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                        .offset = 0,
                                        .size = sizeof(ToneMappingModulePushConstant),
                                    })
@@ -386,19 +394,22 @@ void ToneMappingModuleContext::render() {
 
     ToneMappingModulePushConstant pc{};
     pc.log2Min = -12.0f;
-    pc.log2Max = +4.0f;
+    pc.log2Max = +8.0f;
     pc.epsilon = 1e-6f;
-    pc.lowPercent = 0.005f;
-    pc.highPercent = 0.99f;
+    pc.lowPercent = 0.01f;
+    pc.highPercent = 0.95f;
     pc.middleGrey = module->middleGrey_;
     pc.dt = elapsedTime.count();
     pc.speedUp = module->speedUp_;
     pc.speedDown = module->speedDown_;
     pc.minExposure = 1e-4f;
-    pc.maxExposure = 2.0f;
+    pc.maxExposure = module->maxExposure_;
+    pc.darkAdaptLimit = module->darkAdaptLimit_;
+    pc.saturation = module->saturation_;
+    pc.contrast = module->contrast_;
 
     vkCmdPushConstants(worldCommandBuffer->vkCommandBuffer(), descriptorTable->vkPipelineLayout(),
-                       VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ToneMappingModulePushConstant), &pc);
+                       VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ToneMappingModulePushConstant), &pc);
 
     worldCommandBuffer->bindDescriptorTable(descriptorTable, VK_PIPELINE_BIND_POINT_COMPUTE)
         ->bindComputePipeline(module->histPipeline_);

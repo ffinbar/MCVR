@@ -50,6 +50,13 @@ layout(set = 1, binding = 7) readonly buffer TextureMappingBuffer {
     TextureMapping mapping;
 };
 
+layout(push_constant) uniform PushConstant {
+    int numRayBounces;
+    int useJitter;
+    float emissionMultiplier;
+}
+pc;
+
 layout(set = 2, binding = 0) uniform WorldUniform {
     WorldUBO worldUbo;
 };
@@ -227,8 +234,9 @@ void main() {
 
     // add glowing radiance
     float factor = mainRay.index == 0 ? 1.0 : 16.0;
-    vec3 emissionRadiance = factor * tint * mat.emission * mainRay.throughput;
-    emissionRadiance += tint * albedoEmission * mainRay.throughput;
+    float blockEmissionMul = albedoEmission > 0.0 ? albedoEmission : 1.0;
+    float emissionMul = pc.emissionMultiplier * blockEmissionMul;
+    vec3 emissionRadiance = emissionMul * factor * tint * mat.emission * mainRay.throughput;
     mainRay.radiance += emissionRadiance;
 
     mainRay.hitT = gl_HitTEXT;

@@ -194,9 +194,7 @@ void main() {
     LabPBRMat mat = convertLabPBRMaterial(albedoValue, specularValue, normalValue);
 
     // add glowing radiance
-    float blockEmissionMul = albedoEmission > 0.0 ? albedoEmission : 1.0;
-    float emissionMul = pc.emissionMultiplier * blockEmissionMul;
-    mainRay.radiance += emissionMul * 12 * tint * mat.emission * mainRay.throughput;
+    mainRay.radiance += pc.emissionMultiplier * 12 * tint * mat.emission * mainRay.throughput;
     mainRay.hitT = gl_HitTEXT;
 
     mainRay.instanceIndex = instanceID;

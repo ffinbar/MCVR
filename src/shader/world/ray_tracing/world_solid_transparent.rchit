@@ -234,9 +234,7 @@ void main() {
 
     // add glowing radiance
     float factor = mainRay.index == 0 ? 1.0 : 16.0;
-    float blockEmissionMul = albedoEmission > 0.0 ? albedoEmission : 1.0;
-    float emissionMul = pc.emissionMultiplier * blockEmissionMul;
-    vec3 emissionRadiance = emissionMul * factor * tint * mat.emission * mainRay.throughput;
+    vec3 emissionRadiance = pc.emissionMultiplier * factor * tint * mat.emission * mainRay.throughput;
     mainRay.radiance += emissionRadiance;
 
     mainRay.hitT = gl_HitTEXT;
